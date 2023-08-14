@@ -2,6 +2,7 @@ import sys
 import threading
 import time
 import math
+import struct
 
 
 with open("livecode.bb", "r") as f:
@@ -27,13 +28,18 @@ def reload_program(program_dict):
                 program_dict["last_src"] = program_src
         time.sleep(1)
 
-threading.Thread(target=reload_program, args=(program_dict,), daemon=True).start()
+def count(a=0):
+    while True:
+        a += 1; yield a
 
-t = 0
-while True:
-    t += 1
-    try:
-        sys.stdout.write(chr(program_dict["program_fn"](t)))
-    except Exception as e:
-        sys.stderr.write(str(e) + "\n")
-        program_dict["program_fn"] = program_dict["old_program_fn"]
+if __name__ == "__main__":
+    threading.Thread(target=reload_program, args=(program_dict,), daemon=True).start()
+
+    t = 0
+    while True:
+        t += 1
+        try:
+            sys.stdout.buffer.write(int(program_dict["program_fn"](t)&0xFF).to_bytes(1, 'big'))
+        except Exception as e:
+            sys.stderr.write(str(e) + "\n")
+            program_dict["program_fn"] = program_dict["old_program_fn"]
